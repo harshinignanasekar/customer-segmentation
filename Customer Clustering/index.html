@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customer Segmentation, Harshini Gnanasekar</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0D0F14; --surface: #13161E; --surface2: #1C2030;
+  --border: rgba(255,255,255,0.07); --text: #E8EAF0; --muted: #6B7280;
+  --teal: #00C4B4; --blue: #5B9CF6; --amber: #F5A623;
+}
+html { font-size: 15px; }
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 300; min-height: 100vh; padding: 0 0 80px; }
+
+header {
+  padding: 44px 52px 36px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 24px;
+}
+.header-left h1 {
+  font-family: 'Fraunces', serif; font-weight: 300; font-size: 2.2rem;
+  letter-spacing: -0.03em; line-height: 1.15; color: #fff;
+}
+.header-left h1 em { font-style: italic; color: var(--teal); }
+.header-meta { margin-top: 12px; display: flex; flex-direction: column; gap: 5px; }
+.header-meta .by { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+.header-meta .name { font-family: 'Fraunces', serif; font-size: 1.05rem; color: var(--teal); font-weight: 300; }
+.header-meta .dataset { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; padding-top: 4px; }
+.badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 100px; padding: 7px 16px; font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--muted); }
+.badge span { color: var(--teal); }
+
+main { padding: 0 52px; }
+.section { margin-top: 56px; }
+.section-label { font-family: 'DM Mono', monospace; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 22px; display: flex; align-items: center; gap: 12px; }
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.story-block { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--teal); border-radius: 0 14px 14px 0; padding: 28px 32px; margin-bottom: 16px; }
+.story-block.blue { border-left-color: var(--blue); }
+.story-block.amber { border-left-color: var(--amber); }
+.story-eyebrow { font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--teal); margin-bottom: 10px; }
+.story-block.blue .story-eyebrow { color: var(--blue); }
+.story-block.amber .story-eyebrow { color: var(--amber); }
+.story-headline { font-family: 'Fraunces', serif; font-weight: 300; font-size: 1.35rem; color: #fff; line-height: 1.3; margin-bottom: 12px; letter-spacing: -0.02em; }
+.story-headline em { font-style: italic; }
+.story-body { font-size: 0.88rem; color: var(--muted); line-height: 1.75; }
+.story-body strong { color: var(--text); font-weight: 400; }
+
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 20px; position: relative; overflow: hidden; transition: border-color 0.2s; }
+.kpi-card:hover { border-color: rgba(255,255,255,0.15); }
+.kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent, var(--teal)); }
+.kpi-label { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 12px; }
+.kpi-value { font-family: 'Fraunces', serif; font-weight: 600; font-size: 2.1rem; color: #fff; line-height: 1; letter-spacing: -0.03em; }
+.kpi-sub { margin-top: 8px; font-size: 0.74rem; color: var(--muted); line-height: 1.5; }
+
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; }
+.chart-card.wide { grid-column: 1 / -1; }
+.chart-title { font-family: 'Fraunces', serif; font-weight: 300; font-size: 1rem; color: #fff; margin-bottom: 4px; }
+.chart-sub { font-size: 0.74rem; color: var(--muted); margin-bottom: 20px; }
+.chart-wrap { position: relative; height: 240px; }
+.chart-wrap.tall { height: 300px; }
+
+.segments-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.seg-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; position: relative; overflow: hidden; transition: transform 0.2s, border-color 0.2s; }
+.seg-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.14); }
+.seg-accent { position: absolute; top: 0; left: 0; bottom: 0; width: 3px; border-radius: 16px 0 0 16px; }
+.seg-name { font-family: 'Fraunces', serif; font-size: 1.15rem; font-weight: 300; color: #fff; margin-bottom: 3px; margin-left: 12px; }
+.seg-count { font-family: 'DM Mono', monospace; font-size: 0.73rem; color: var(--muted); margin-bottom: 20px; margin-left: 12px; }
+.seg-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-left: 12px; }
+.seg-metric-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+.seg-metric-value { font-family: 'Fraunces', serif; font-size: 1.45rem; font-weight: 600; line-height: 1; letter-spacing: -0.03em; }
+.seg-bar-wrap { margin-top: 18px; margin-left: 12px; }
+.seg-bar-row { margin-bottom: 10px; }
+.seg-bar-label { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--muted); margin-bottom: 5px; }
+.seg-bar-track { height: 3px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.seg-bar-fill { height: 100%; border-radius: 4px; }
+
+.reco-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.reco-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+.reco-seg { font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.reco-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.reco-card ul { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+.reco-card li { font-size: 0.82rem; color: var(--muted); padding-left: 14px; position: relative; line-height: 1.55; }
+.reco-card li::before { content: '→'; position: absolute; left: 0; color: var(--muted); opacity: 0.5; }
+
+@media (max-width: 1100px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .segments-grid, .reco-grid, .charts-grid { grid-template-columns: 1fr; }
+  .chart-card.wide { grid-column: 1; }
+  header { flex-direction: column; }
+}
+@media (max-width: 700px) {
+  main, header { padding-left: 20px; padding-right: 20px; }
+  .header-left h1 { font-size: 1.7rem; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>Customer <em>Segmentation</em></h1>
+    <div class="header-meta">
+      <span class="by">Analysis by</span>
+      <span class="name">Harshini Gnanasekar</span>
+      <span class="dataset">Instacart Grocery Dataset · K-Means Clustering · Python · scikit-learn</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="badge"><span>132,790</span> customers segmented</div>
+    <div class="badge"><span>3</span> behavioural segments identified</div>
+  </div>
+</header>
+
+<main>
+
+  <div class="section">
+    <div class="section-label">The question</div>
+    <div class="story-block">
+      <div class="story-eyebrow">Starting point</div>
+      <div class="story-headline">Not all customers shop the same way. <em>So why treat them like they do?</em></div>
+      <div class="story-body">
+        The Instacart dataset captures <strong>3.4 million grocery orders</strong> across <strong>206,000 customers</strong>. On the surface it looks like one large customer base. But underneath, customers behave very differently. Some shop every week without fail, some browse broadly and occasionally, and some place one big order then go quiet for weeks. This analysis uses <strong>K-Means clustering</strong> on 7 behavioural features (order frequency, basket size, reorder rate, department breadth, unique products, shopping cadence and order history) to reveal three genuinely distinct customer personalities.
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Overall picture. 132,790 customers with sufficient order history</div>
+    <div class="kpi-grid">
+      <div class="kpi-card" style="--accent:#00C4B4">
+        <div class="kpi-label">Customers Segmented</div>
+        <div class="kpi-value">132,790</div>
+        <div class="kpi-sub">Customers with 3+ orders and order gap data available for clustering</div>
+      </div>
+      <div class="kpi-card" style="--accent:#5B9CF6">
+        <div class="kpi-label">Avg Orders / Customer</div>
+        <div class="kpi-value">21.1</div>
+        <div class="kpi-sub">Ranges from 3 to 100, huge variation across the base</div>
+      </div>
+      <div class="kpi-card" style="--accent:#F5A623">
+        <div class="kpi-label">Avg Basket Size</div>
+        <div class="kpi-value">12.4</div>
+        <div class="kpi-sub">Items added per order on average</div>
+      </div>
+      <div class="kpi-card" style="--accent:#00C4B4">
+        <div class="kpi-label">Avg Reorder Rate</div>
+        <div class="kpi-value">49%</div>
+        <div class="kpi-sub">Half of all products bought are repeat purchases. Strong habitual signals.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">What the data showed</div>
+    <div class="story-block">
+      <div class="story-eyebrow">The finding</div>
+      <div class="story-headline">Three distinct shopping personalities <em>emerged from the data</em></div>
+      <div class="story-body">
+        Running K-Means across the 7 features, the silhouette score peaked at <strong>k=3</strong>, meaning three clusters are the most natural grouping in this dataset. The segments are not arbitrary slices; they reflect genuinely different shopping personalities. A smaller group of <strong>highly loyal, high-frequency shoppers</strong> who order every 8 days. A large middle group of <strong>engaged but irregular buyers</strong> exploring broadly. And a second large group who shop <strong>infrequently but spend big when they do</strong>.
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Segment profiles</div>
+    <div class="segments-grid">
+      <div class="seg-card">
+        <div class="seg-accent" style="background:#00C4B4"></div>
+        <div class="seg-name">Habitual Reorderers</div>
+        <div class="seg-count">22,621 customers · 17% of base</div>
+        <div class="seg-metrics">
+          <div><div class="seg-metric-label">Avg Orders</div><div class="seg-metric-value" style="color:#00C4B4">49.7</div></div>
+          <div><div class="seg-metric-label">Reorder Rate</div><div class="seg-metric-value" style="color:#00C4B4">69%</div></div>
+          <div><div class="seg-metric-label">Basket Size</div><div class="seg-metric-value" style="color:#00C4B4">14.4</div></div>
+          <div><div class="seg-metric-label">Days Between</div><div class="seg-metric-value" style="color:#00C4B4">8.0</div></div>
+        </div>
+        <div class="seg-bar-wrap">
+          <div class="seg-bar-row"><div class="seg-bar-label"><span>Order frequency</span><span>49.7</span></div><div class="seg-bar-track"><div class="seg-bar-fill" style="width:100%;background:#00C4B4"></div></div></div>
+          <div class="seg-bar-row"><div class="seg-bar-label"><span>Reorder rate</span><span>69%</span></div><div class="seg-bar-track"><div class="seg-bar-fill" style="width:69%;background:#00C4B4"></div></div></div>
+          <div class="seg-bar-row"><div class="seg-bar-label"><span>Dept breadth</span><span>15.3 depts</span></div><div class="seg-bar-track"><div class="seg-bar-fill" style="width:73%;background:#00C4B4"></div></div></div>
+        </div>
+      </div>
+      <div class="seg-card">
+        <div class="seg-accent" style="background:#5B9CF6"></div>
+        <div class="seg-name">Casual Explorers</div>
+        <div class="seg-count">55,072 customers · 41.5% of base</div>
+        <div class="seg-metrics">
+          <div><div class="seg-metric-label">Avg Orders</div><div class="seg-metric-value" style="color:#5B9CF6">22.4</div></div>
+          <div><div class="seg-metric-label">Reorder Rate</div><div class="seg-metric-value" style="color:#5B9CF6">57%</div></div>
+          <div><div class="seg-metric-label">Basket Size</div><div class="seg-metric-value" style="color:#5B9CF6">9.3</div></div>
+          <div><div class="seg-metric-label">Days Between</div><div class="seg-metric-value" style="color:#5B9CF6">10.9</div></div>
+        </div>
+        <div class="seg-bar-wrap">
+          <div class="seg-bar-row"><div class="seg-bar-label"><span>Order frequency</span><span>22.4</span></div><div class="seg-bar-track"><div class="seg-bar-fill" style="width:45%;background:#5B9CF6"></div></div></div>
+          <div class="seg-bar-row"><div class="seg-bar-label"><span>Reorder rate</span><span>57%</span></div><div class="seg-bar-track"><div class="seg-bar-fill" style="width:57%;background:#5B9CF6"></div></div></div>
+          <div class="seg-bar-row"><div class="seg-bar-label"><span>Dept breadth</span><span>12.5 depts</span></div><div class="seg-bar-track"><div class="seg-bar-fill" style="width:60%;background:#5B9CF6"></div></div></div>
+        </div>
+      </div>
+      <div class="seg-card">
+        <div class="seg-accent" style="background:#F5A623"></div>
+        <div class="seg-name">Infrequent Buyers</div>
+        <div class="seg-count">55,097 customers · 41.5% of base</div>
+        <div class="seg-metrics">
+          <div><div class="seg-metric-label">Avg Orders</div><div class="seg-metric-value" style="color:#F5A623">7.9</div></div>
+          <div><div class="seg-metric-label">Reorder Rate</div><div class="seg-metric-value" style="color:#F5A623">34%</div></div>
+          <div><div class="seg-metric-label">Basket Size</div><div class="seg-metric-value" style="color:#F5A623">14.8</div></div>
+          <div><div class="seg-metric-label">Days Between</div><div class="seg-metric-value" style="color:#F5A623">19.6</div></div>
+        </div>
+        <div class="seg-bar-wrap">
+          <div class="seg-bar-row"><div class="seg-bar-label"><span>Order frequency</span><span>7.9</span></div><div class="seg-bar-track"><div class="seg-bar-fill" style="width:16%;background:#F5A623"></div></div></div>
+          <div class="seg-bar-row"><div class="seg-bar-label"><span>Reorder rate</span><span>34%</span></div><div class="seg-bar-track"><div class="seg-bar-fill" style="width:34%;background:#F5A623"></div></div></div>
+          <div class="seg-bar-row"><div class="seg-bar-label"><span>Dept breadth</span><span>12.8 depts</span></div><div class="seg-bar-track"><div class="seg-bar-fill" style="width:61%;background:#F5A623"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Visualisations</div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">Customer share by segment</div>
+        <div class="chart-sub">How the 132,790 customers split across the three groups</div>
+        <div class="chart-wrap"><canvas id="donutChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Behavioural radar, segment comparison</div>
+        <div class="chart-sub">Normalised scores across 5 key behavioural dimensions</div>
+        <div class="chart-wrap"><canvas id="radarChart"></canvas></div>
+      </div>
+      <div class="chart-card wide">
+        <div class="chart-title">Top departments by segment</div>
+        <div class="chart-sub">% of customers in each segment whose #1 purchase category is that department</div>
+        <div class="chart-wrap tall"><canvas id="deptChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Order frequency distribution</div>
+        <div class="chart-sub">How customers spread across order count buckets</div>
+        <div class="chart-wrap"><canvas id="ordersChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Shopping cadence by segment</div>
+        <div class="chart-sub">Average days between consecutive orders</div>
+        <div class="chart-wrap"><canvas id="daysChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">The surprising insights</div>
+    <div class="story-block amber">
+      <div class="story-eyebrow">Counterintuitive finding</div>
+      <div class="story-headline">Infrequent Buyers have the <em>biggest baskets</em></div>
+      <div class="story-body">
+        At first glance, Infrequent Buyers look like the lowest-value group. They shop rarely, averaging just <strong>7.9 orders</strong> and <strong>19.6 days between visits</strong>. But their basket size tells a different story: <strong>14.8 items per order</strong>, the highest of any segment. These customers don't shop often, but when they do, they shop big. This suggests they consolidate their grocery run into occasional large purchases rather than frequent top-ups. A behaviour worth leaning into with bulk-buy promotions and free delivery thresholds rather than trying to increase visit frequency.
+      </div>
+    </div>
+    <div class="story-block blue">
+      <div class="story-eyebrow">The biggest opportunity</div>
+      <div class="story-headline">Casual Explorers are the <em>largest untapped segment</em></div>
+      <div class="story-body">
+        Casual Explorers make up <strong>41.5% of the customer base</strong>, the single largest group. They're already engaged (22.4 orders on average, 57% reorder rate) but haven't yet built the strong habits of Habitual Reorderers. They're the middle of the funnel: active enough to be worth investing in, not yet loyal enough to be retained passively. <strong>Moving even 10% of Casual Explorers into Habitual Reorderer behaviour would represent a significant commercial uplift.</strong> Achievable through personalised product recommendations, subscription nudges and targeted promotions on their top categories.
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">What to do about it. Recommendations by segment</div>
+    <div class="reco-grid">
+      <div class="reco-card">
+        <div class="reco-seg" style="color:#00C4B4"><div class="reco-dot" style="background:#00C4B4"></div>Habitual Reorderers</div>
+        <ul>
+          <li>Subscribe and save. Auto-replenishment fits their weekly cadence perfectly</li>
+          <li>Introduce adjacent products within top departments (produce → organic range)</li>
+          <li>Loyalty rewards and early access to new products. Protect this group above all</li>
+          <li>Cross-sell into unexplored departments. They have highest breadth potential</li>
+        </ul>
+      </div>
+      <div class="reco-card">
+        <div class="reco-seg" style="color:#5B9CF6"><div class="reco-dot" style="background:#5B9CF6"></div>Casual Explorers</div>
+        <ul>
+          <li>Largest segment (41.5%), the biggest commercial opportunity in aggregate</li>
+          <li>Personalised recommendations based on their broad browsing and purchase history</li>
+          <li>Incentivise the 3rd and 4th order. Habit forms after repeated positive experience</li>
+          <li>Curated bundles and seasonal campaigns to build frequency over time</li>
+        </ul>
+      </div>
+      <div class="reco-card">
+        <div class="reco-seg" style="color:#F5A623"><div class="reco-dot" style="background:#F5A623"></div>Infrequent Buyers</div>
+        <ul>
+          <li>Large basket (14.8 items), high intent when they shop. Lean into it</li>
+          <li>Bulk-buy promotions and free delivery above a spend threshold</li>
+          <li>Time-sensitive win-back campaigns when gaps exceed 30 days</li>
+          <li>Set a 90-day reactivation window. Deprioritise if no response</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const TEAL = '#00C4B4', BLUE = '#5B9CF6', AMBER = '#F5A623';
+const MUTED = '#6B7280', GRID = 'rgba(255,255,255,0.05)';
+Chart.defaults.color = MUTED;
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.font.size = 12;
+
+new Chart(document.getElementById('donutChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Habitual Reorderers', 'Casual Explorers', 'Infrequent Buyers'],
+    datasets: [{ data: [22621, 55072, 55097], backgroundColor: [TEAL, BLUE, AMBER], borderColor: '#13161E', borderWidth: 3, hoverOffset: 6 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, cutout: '68%',
+    plugins: {
+      legend: { position: 'right', labels: { padding: 16, boxWidth: 10, color: MUTED } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toLocaleString()} (${(ctx.parsed/132790*100).toFixed(1)}%)` } }
+    }
+  }
+});
+
+new Chart(document.getElementById('radarChart'), {
+  type: 'radar',
+  data: {
+    labels: ['Order Freq', 'Basket Size', 'Reorder Rate', 'Dept Breadth', 'Cadence (inv.)'],
+    datasets: [
+      { label: 'Habitual Reorderers', data: [100, 97, 100, 100, 100], borderColor: TEAL, backgroundColor: 'rgba(0,196,180,0.1)', borderWidth: 2, pointBackgroundColor: TEAL, pointRadius: 4 },
+      { label: 'Casual Explorers',    data: [45, 63, 83, 82, 72],     borderColor: BLUE,  backgroundColor: 'rgba(91,156,246,0.1)',  borderWidth: 2, pointBackgroundColor: BLUE,  pointRadius: 4 },
+      { label: 'Infrequent Buyers',   data: [16, 100, 49, 84, 0],     borderColor: AMBER, backgroundColor: 'rgba(245,166,35,0.1)',  borderWidth: 2, pointBackgroundColor: AMBER, pointRadius: 4 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: { r: { min: 0, max: 100, grid: { color: GRID }, angleLines: { color: GRID }, ticks: { display: false }, pointLabels: { color: MUTED, font: { size: 11 } } } },
+    plugins: { legend: { labels: { padding: 16, boxWidth: 10, color: MUTED } } }
+  }
+});
+
+new Chart(document.getElementById('deptChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Produce', 'Dairy & Eggs', 'Beverages', 'Snacks', 'Frozen', 'Other'],
+    datasets: [
+      { label: 'Habitual Reorderers', data: [71.5, 14.8, 4.3, 4.6, 2.3, 2.5], backgroundColor: TEAL,  borderRadius: 4 },
+      { label: 'Casual Explorers',    data: [60.3, 16.3, 8.0, 5.8, 4.4, 5.2], backgroundColor: BLUE,  borderRadius: 4 },
+      { label: 'Infrequent Buyers',   data: [64.0, 15.8, 4.3, 4.7, 5.6, 5.6], backgroundColor: AMBER, borderRadius: 4 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      x: { grid: { color: GRID }, ticks: { color: MUTED } },
+      y: { grid: { color: GRID }, ticks: { color: MUTED, callback: v => v + '%' }, title: { display: true, text: '% of segment', color: MUTED } }
+    },
+    plugins: { legend: { labels: { padding: 16, boxWidth: 10, color: MUTED } }, tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}%` } } }
+  }
+});
+
+new Chart(document.getElementById('ordersChart'), {
+  type: 'bar',
+  data: {
+    labels: ['1–5 orders', '6–10', '11–20', '21–50', '50+'],
+    datasets: [{ label: 'Customers', data: [17621, 30108, 36830, 37532, 10699], backgroundColor: [AMBER, BLUE, TEAL, TEAL, '#009e91'], borderRadius: 6 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      x: { grid: { color: GRID }, ticks: { color: MUTED } },
+      y: { grid: { color: GRID }, ticks: { color: MUTED, callback: v => (v/1000).toFixed(0) + 'K' } }
+    },
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString()} customers` } } }
+  }
+});
+
+new Chart(document.getElementById('daysChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Habitual Reorderers', 'Casual Explorers', 'Infrequent Buyers'],
+    datasets: [{ label: 'Avg days between orders', data: [8.0, 10.9, 19.6], backgroundColor: [TEAL, BLUE, AMBER], borderRadius: 8, barThickness: 52 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    indexAxis: 'y',
+    scales: {
+      x: { grid: { color: GRID }, ticks: { color: MUTED, callback: v => v + 'd' } },
+      y: { grid: { color: 'transparent' }, ticks: { color: MUTED } }
+    },
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x} days between orders` } } }
+  }
+});
+</script>
+</body>
+</html>
